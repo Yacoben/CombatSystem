@@ -62,7 +62,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* SwitchGaitAction;
 	/* Enhanced Input System */
+<<<<<<< HEAD
 	// cos zmieniam sprawdzam
+=======
+>>>>>>> 9f4a510dde55b509fb766fc303ace6b713fc0a4c
 
 	/* AnimMontage */
 	UFUNCTION()
