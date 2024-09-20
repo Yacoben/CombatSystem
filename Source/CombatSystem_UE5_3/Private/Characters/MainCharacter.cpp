@@ -103,15 +103,14 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMainCharacter::Move);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMainCharacter::MoveCompleted);
-
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMainCharacter::Look);
-
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AMainCharacter::Jump);
-
 		// SwitchGait
 		EnhancedInputComponent->BindAction(SwitchGaitAction, ETriggerEvent::Started, this, &AMainCharacter::SwitchGait);
+		// Roll
+		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &AMainCharacter::Roll);
 	}
 }
 
@@ -173,6 +172,18 @@ void AMainCharacter::SwitchGait(const FInputActionValue& Value)
 	{
 		GaitState = EGaitState::EGS_Running;
 		UpdateGait(GaitState);
+	}
+}
+
+void AMainCharacter::Roll(const FInputActionValue& Value)
+{
+	if (ActionState == EActionState::EAS_Unoccupied)
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+		AnimInstance->Montage_Play(RollMontage);
+		
+		ActionState = EActionState::EAS_Rolling;
 	}
 }
 

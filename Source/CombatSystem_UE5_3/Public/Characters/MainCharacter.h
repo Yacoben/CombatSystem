@@ -37,6 +37,8 @@ private:
 	void MoveCompleted(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void SwitchGait(const FInputActionValue& Value);
+	void Roll(const FInputActionValue& Value);
+
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	class UInputMappingContext* CharacterMappingContext;
@@ -61,6 +63,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* SwitchGaitAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* RollAction;
 	/* Enhanced Input System */
 
 	/* AnimMontage */
@@ -81,6 +86,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Attack, meta = (AllowPrivateAccess = "true"))
 	bool NextAttack = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attack, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* RollMontage;
 	/* AnimMontage */
 
 public:
@@ -100,6 +108,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	EActionState ActionState = EActionState::EAS_Unoccupied;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	EComboInputs ComboInputs = EComboInputs::ECI_None;
 	/* Enums */
 
 private:
@@ -110,6 +121,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UCameraComponent> CameraComponent;
+
 	/* Components */
 
 	/* Weapon class */

@@ -18,7 +18,10 @@ struct COMBATSYSTEM_UE5_3_API FComboInputs : public FTableRowBase
 	TArray<EComboInputs> ComboInputs;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
-	TArray<UAnimMontage*> AttackMontages;
+	TArray<UAnimMontage*> LightAttackMontages;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attack")
+	TArray<UAnimMontage*> HeavyAttackMontages;
 
 	FComboInputs();
 	~FComboInputs();
