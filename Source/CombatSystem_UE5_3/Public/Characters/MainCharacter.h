@@ -28,8 +28,76 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+
+public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Input)
 	void UpdateInputData(float InputSide, float InputForward, FVector2D LocomotionDirectionValue);
+
+	UFUNCTION(BlueprintCallable)
+	void SetActionState(EActionState Action);
+
+	/* <AActor> */
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	/* <AActor> */
+
+protected:
+	UFUNCTION(BlueprintImplementableEvent, Category = Locomotion)
+	void UpdateGait(EGaitState DesiredGait);
+	void SpawnWeaponInHandSocket();
+
+	/* Target Lock */
+	TArray<AActor*> SpawnTargettingNet();
+	void ClearNet();
+	AActor* GetClosestTarget(TArray<AActor*> TargetsInRadius);
+	AActor* SpawnTargetter();
+	void AttachTargetter();
+	void ClearTargetter();
+	void CharacterLock(float DeltaTime, float InterpSpeed);
+	void CheckTargetting();
+	void StopTargetting();
+	bool IsClosestTargetDead();
+	void OnClosestTargetIsDead();
+
+	UPROPERTY(BlueprintReadWrite)
+	bool bIsTargetting = false;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	float InterpTargetLock = 2.f;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	TSubclassOf<class ANetTargetting> NetTargetClass;
+
+	UPROPERTY(EditAnywhere, Category = Combat)
+	TSubclassOf<class ATargetter> TargetterClass;
+
+	// Net actor spawned in world
+	UPROPERTY(BlueprintReadWrite)
+	class ANetTargetting* Net;
+
+	// Targetter actor spawned in world
+	UPROPERTY(BlueprintReadWrite)
+	class ATargetter* Targetter;
+
+	UPROPERTY(BlueprintReadWrite)
+	TArray<AActor*> TargetsInRange;
+
+	UPROPERTY(BlueprintReadWrite)
+	AActor* ClosestTarget;
+	/* Target Lock */
+
+	/* Enums */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	ECharacterState CharacterState;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	EGaitState GaitState = EGaitState::EGS_Running;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	EActionState ActionState = EActionState::EAS_Unoccupied;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	EComboInputs ComboInputs = EComboInputs::ECI_None;
+	/* Enums */
 
 private:
 	/* Enhanced Input System */
@@ -38,6 +106,10 @@ private:
 	void Look(const FInputActionValue& Value);
 	void SwitchGait(const FInputActionValue& Value);
 	void Roll(const FInputActionValue& Value);
+	void TargetLock(const FInputActionValue& Value);
+	/* Enhanced Input System */
+
+	bool CanLook();
 
 
 	UPROPERTY(EditAnywhere, Category = Input)
@@ -66,6 +138,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* RollAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* TargetLockAction;
 	/* Enhanced Input System */
 
 	/* AnimMontage */
@@ -91,30 +166,6 @@ private:
 	UAnimMontage* RollMontage;
 	/* AnimMontage */
 
-public:
-
-protected:
-	UFUNCTION(BlueprintImplementableEvent, Category = Locomotion)
-	void UpdateGait(EGaitState DesiredGait);
-
-	void SpawnWeaponInHandSocket();
-
-	/* Enums */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	ECharacterState CharacterState;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	EGaitState GaitState = EGaitState::EGS_Running;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	EActionState ActionState = EActionState::EAS_Unoccupied;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
-	EComboInputs ComboInputs = EComboInputs::ECI_None;
-	/* Enums */
-
-private:
-	
 	/* Components */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USpringArmComponent> SpringArmComponent;
