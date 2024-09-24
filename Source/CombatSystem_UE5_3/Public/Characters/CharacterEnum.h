@@ -17,6 +17,7 @@ enum class ELocomotionDirection : uint8
 UENUM(BlueprintType)
 enum class EGaitState : uint8
 {
+	EGS_Idle UMETA(DisplayName = "Idle"),
 	EGS_Walking UMETA(DisplayName = "Walking"),
 	EGS_Running UMETA(DisplayName = "Running")
 };

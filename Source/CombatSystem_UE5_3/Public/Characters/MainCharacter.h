@@ -127,6 +127,9 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
 	float ForwardInput;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float CurrentSpeed;
+
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* LookAction;
 

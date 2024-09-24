@@ -179,8 +179,9 @@ void AMainCharacter::MoveCompleted(const FInputActionValue& Value)
 {
 	SideInput = 0.f;
 	ForwardInput = 0.f;
-
 	UpdateInputData(SideInput, ForwardInput, InputLocomotionDirection);
+	GaitState = EGaitState::EGS_Idle;
+	CurrentSpeed = 0.f;
 }
 
 void AMainCharacter::Look(const FInputActionValue& Value)
