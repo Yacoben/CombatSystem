@@ -19,7 +19,8 @@ enum class EGaitState : uint8
 {
 	EGS_Idle UMETA(DisplayName = "Idle"),
 	EGS_Walking UMETA(DisplayName = "Walking"),
-	EGS_Running UMETA(DisplayName = "Running")
+	EGS_Running UMETA(DisplayName = "Running"),
+	EGS_Sprinting UMETA(DisplayName = "Sprinting")
 };
 
 UENUM(BlueprintType)
@@ -44,4 +45,18 @@ enum class EComboInputs : uint8
 	ECI_None UMETA(DisplayName = "None"),
 	ECI_LightAttack UMETA(DisplayName = "LightAttack"),
 	ECI_HeavyAttack UMETA(DisplayName = "HeavyAttack")
+};
+
+UENUM(BlueprintType)
+enum class ERollDirection : uint8
+{
+	ERD_None UMETA(DisplayName = "None"),
+	ERD_ForwardRoll UMETA(DisplayName = "ForwardRoll"),
+	ERD_ForwardRightRoll UMETA(DisplayName = "ForwardRightRoll"),
+	ERD_RightRoll UMETA(DisplayName = "RightRoll"),
+	ERD_BackwardRightRoll UMETA(DisplayName = "BackwardRightRoll"),
+	ERD_BackwardRoll UMETA(DisplayName = "BackwardRoll"),
+	ERD_BackwardLeftRoll UMETA(DisplayName = "BackwardLeftRoll"),
+	ERD_LeftRoll UMETA(DisplayName = "LeftRoll"),
+	ERD_ForwardLeftRoll UMETA(DisplayName = "ForwardLeftRoll")
 };

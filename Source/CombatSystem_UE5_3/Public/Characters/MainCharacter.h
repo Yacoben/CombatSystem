@@ -33,8 +33,14 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Input)
 	void UpdateInputData(float InputSide, float InputForward, FVector2D LocomotionDirectionValue);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = Attack)
+	void UpdateActionData(EActionState Action);
+
 	UFUNCTION(BlueprintCallable)
 	void SetActionState(EActionState Action);
+
+	UFUNCTION(BlueprintImplementableEvent, Category = Attack)
+	void PlayMontageRoll(float PlayRate);
 
 	/* <AActor> */
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
@@ -97,6 +103,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 	EComboInputs ComboInputs = EComboInputs::ECI_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	ERollDirection RollDirection;
 	/* Enums */
 
 private:
@@ -107,10 +116,14 @@ private:
 	void SwitchGait(const FInputActionValue& Value);
 	void Roll(const FInputActionValue& Value);
 	void TargetLock(const FInputActionValue& Value);
+	void Sprint(const FInputActionValue& Value);
 	/* Enhanced Input System */
 
 	bool CanLook();
+	bool bIsSprinting = false;
 
+	UFUNCTION(BlueprintPure)
+	bool IsSprinting();
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	class UInputMappingContext* CharacterMappingContext;
@@ -128,7 +141,28 @@ private:
 	float ForwardInput;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
-	float CurrentSpeed;
+	float MinSideInput = -3.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float MaxSideInput = 3.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float MinForwardInput = -3.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float MaxForwardInput = 3.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float InputValueMultiplier = 2.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float SavedSideInput;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float SavedForwardInput;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float LocomotionAngle;
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* LookAction;
@@ -144,6 +178,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* TargetLockAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* SprintAction;
 	/* Enhanced Input System */
 
 	/* AnimMontage */
@@ -153,20 +190,11 @@ private:
 	UFUNCTION()
 	void OnMontageEnding(UAnimMontage* AnimMontage, bool bInterrupted);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attack, meta = (AllowPrivateAccess = "true"))
-	TArray<UAnimMontage*> LightAttackMontage;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attack, meta = (AllowPrivateAccess = "true"))
-	TArray<UAnimMontage*> HeavyAttackMontage;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Attack, meta = (AllowPrivateAccess = "true"))
 	int32 AttackIndex = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Attack, meta = (AllowPrivateAccess = "true"))
 	bool NextAttack = false;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attack, meta = (AllowPrivateAccess = "true"))
-	UAnimMontage* RollMontage;
 	/* AnimMontage */
 
 	/* Components */

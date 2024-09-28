@@ -115,16 +115,11 @@ void AMainCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bIsTargetting == true)
+	if (bIsTargetting)
 	{
 		CheckTargetting();
 		CharacterLock(DeltaTime, InterpTargetLock);
 	}
-	else
-	{
-		GetCharacterMovement()->bOrientRotationToMovement = true;
-	}
-
 }
 
 void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -144,6 +139,8 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &AMainCharacter::Roll);
 		// TargetLock
 		EnhancedInputComponent->BindAction(TargetLockAction, ETriggerEvent::Started, this, &AMainCharacter::TargetLock);
+		// Sprint
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AMainCharacter::Sprint);
 	}
 }
 
@@ -180,15 +177,13 @@ void AMainCharacter::MoveCompleted(const FInputActionValue& Value)
 	SideInput = 0.f;
 	ForwardInput = 0.f;
 	UpdateInputData(SideInput, ForwardInput, InputLocomotionDirection);
-	GaitState = EGaitState::EGS_Idle;
-	CurrentSpeed = 0.f;
 }
 
 void AMainCharacter::Look(const FInputActionValue& Value)
 {
 	const FVector2D LookAxisValue = Value.Get<FVector2D>();
 
-	if (Controller != nullptr && CanLook())
+	if (Controller != nullptr) //&& CanLook())
 	{
 		AddControllerYawInput(LookAxisValue.X);
 		AddControllerPitchInput(LookAxisValue.Y);
@@ -197,15 +192,13 @@ void AMainCharacter::Look(const FInputActionValue& Value)
 
 void AMainCharacter::SwitchGait(const FInputActionValue& Value)
 {
-	if (GaitState == EGaitState::EGS_Running)
+	if (InputValueMultiplier != 1.f)
 	{
-		GaitState = EGaitState::EGS_Walking;
-		UpdateGait(GaitState);
+		InputValueMultiplier = 1.f;
 	}
 	else
 	{
-		GaitState = EGaitState::EGS_Running;
-		UpdateGait(GaitState);
+		InputValueMultiplier = 2.f;
 	}
 }
 
@@ -213,13 +206,13 @@ void AMainCharacter::Roll(const FInputActionValue& Value)
 {
 	if (ActionState == EActionState::EAS_Unoccupied)
 	{
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (IsSprinting()) InputValueMultiplier = 2.f;
 
-		AnimInstance->Montage_Play(RollMontage);
-		
+		PlayMontageRoll(1.4f);
 		ActionState = EActionState::EAS_Rolling;
-	}
-}
+		UpdateActionData(ActionState);
+	};
+};
 
 void AMainCharacter::TargetLock(const FInputActionValue& Value)
 {
@@ -250,6 +243,21 @@ void AMainCharacter::TargetLock(const FInputActionValue& Value)
 	}
 }
 
+void AMainCharacter::Sprint(const FInputActionValue& Value)
+{
+	if (IsSprinting())
+	{
+		InputValueMultiplier = 2.f;
+		bIsSprinting = false;
+	}
+	else
+	{
+		bIsSprinting = true;
+		InputValueMultiplier = 3.f;
+		StopTargetting();
+	}
+}
+
 bool AMainCharacter::CanLook()
 {
 	if (bIsTargetting == false)
@@ -257,6 +265,11 @@ bool AMainCharacter::CanLook()
 		return true;
 	}
 	else return false;
+}
+
+bool AMainCharacter::IsSprinting()
+{
+	return InputValueMultiplier == 3.f && bIsSprinting == true;
 }
 
 void AMainCharacter::OnNotifyBegin(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPayload)
@@ -330,8 +343,8 @@ AActor* AMainCharacter::GetClosestTarget(TArray<AActor*> TargetsInRadius)
 		{
 			ClosestDistance = GetDistanceTo(Target);
 			ClosestTarget = Target;
-			UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), ClosestDistance);
-			UE_LOG(LogTemp, Warning, TEXT("Closest Target: %s"), *ClosestTarget->GetName());
+			//UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), ClosestDistance);
+			//UE_LOG(LogTemp, Warning, TEXT("Closest Target: %s"), *ClosestTarget->GetName());
 		}
 	}
 	return ClosestTarget;
@@ -417,6 +430,7 @@ void AMainCharacter::StopTargetting()
 	ClosestTarget = nullptr;
 	bIsTargetting = false;
 	TargetsInRange.Empty();
+	GetCharacterMovement()->bOrientRotationToMovement = true;
 }
 
 bool AMainCharacter::IsClosestTargetDead()
