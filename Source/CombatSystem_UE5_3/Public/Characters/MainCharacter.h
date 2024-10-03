@@ -36,9 +36,6 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, Category = Attack)
 	void UpdateActionData(EActionState Action);
 
-	UFUNCTION(BlueprintCallable)
-	void SetActionState(EActionState Action);
-
 	UFUNCTION(BlueprintImplementableEvent, Category = Attack)
 	void PlayMontageRoll(float PlayRate);
 
@@ -47,6 +44,9 @@ public:
 	/* <AActor> */
 
 protected:
+	void SwitchMappingContext(class UInputMappingContext* MappingContext);
+	bool HasMappingContext(const class UInputMappingContext* MappingContext);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = Locomotion)
 	void UpdateGait(EGaitState DesiredGait);
 	void SpawnWeaponInHandSocket();
@@ -56,7 +56,7 @@ protected:
 	void ClearNet();
 	AActor* GetClosestTarget(TArray<AActor*> TargetsInRadius);
 	AActor* SpawnTargetter();
-	void AttachTargetter();
+	void AttachTargetter(AActor* Target);
 	void ClearTargetter();
 	void CharacterLock(float DeltaTime, float InterpSpeed);
 	void CheckTargetting();
@@ -89,6 +89,9 @@ protected:
 
 	UPROPERTY(BlueprintReadWrite)
 	AActor* ClosestTarget;
+
+	UPROPERTY(BlueprintReadWrite)
+	AActor* SecondClosestTarget;
 	/* Target Lock */
 
 	/* Enums */
@@ -110,26 +113,24 @@ protected:
 
 private:
 	/* Enhanced Input System */
+	void SwitchMapping(const FInputActionValue& Value);
 	void Move(const FInputActionValue& Value);
 	void MoveCompleted(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void LookStarted(const FInputActionValue& Value);
 	void SwitchGait(const FInputActionValue& Value);
 	void Roll(const FInputActionValue& Value);
 	void TargetLock(const FInputActionValue& Value);
 	void Sprint(const FInputActionValue& Value);
+	void ChangeTargetLock(const FInputActionValue& Value);
 	/* Enhanced Input System */
 
 	bool CanLook();
+
 	bool bIsSprinting = false;
 
 	UFUNCTION(BlueprintPure)
 	bool IsSprinting();
-
-	UPROPERTY(EditAnywhere, Category = Input)
-	class UInputMappingContext* CharacterMappingContext;
-
-	UPROPERTY(EditAnywhere, Category = Input)
-	UInputAction* MoveAction;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
 	FVector2D InputLocomotionDirection;
@@ -165,6 +166,15 @@ private:
 	float LocomotionAngle;
 
 	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputMappingContext* KeyboardMappingContext;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	class UInputMappingContext* GamepadMappingContext;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* MoveAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* LookAction;
 
 	UPROPERTY(EditAnywhere, Category = Input)
@@ -180,7 +190,13 @@ private:
 	UInputAction* TargetLockAction;
 
 	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* ChangeTargetLockAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
 	UInputAction* SprintAction;
+
+	UPROPERTY(EditAnywhere, Category = Input)
+	UInputAction* SwitchMappingAction;
 	/* Enhanced Input System */
 
 	/* AnimMontage */
@@ -217,4 +233,13 @@ private:
 	FName WeaponHandSocket;
 	/* Weapon class */
 
+	public:
+		UFUNCTION(BlueprintCallable)
+		FORCEINLINE void SetActionState(EActionState Action);
+
+		UFUNCTION(BlueprintCallable)
+		FORCEINLINE void SetNextAttack(bool Value) { NextAttack = Value; }
+
+		UFUNCTION(BlueprintCallable)
+		FORCEINLINE void SetAttackIndex(int32 Index) { AttackIndex = Index; }
 };

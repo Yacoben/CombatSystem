@@ -13,6 +13,7 @@
 /* Enhanced Input */
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputCoreTypes.h"
 /* Enhanced Input */
 
 /* Weapons */
@@ -90,13 +91,7 @@ void AMainCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			Subsystem->AddMappingContext(CharacterMappingContext, 0);
-		}
-	}
+	SwitchMappingContext(KeyboardMappingContext);
 	UpdateGait(GaitState);
 	UpdateInputData(SideInput, ForwardInput, InputLocomotionDirection);
 	SpawnWeaponInHandSocket();
@@ -126,11 +121,12 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		// Looking
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMainCharacter::Look);
+		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Started, this, &AMainCharacter::LookStarted);
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AMainCharacter::Move);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AMainCharacter::MoveCompleted);
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AMainCharacter::Look);
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AMainCharacter::Jump);
 		// SwitchGait
@@ -139,9 +135,48 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		EnhancedInputComponent->BindAction(RollAction, ETriggerEvent::Started, this, &AMainCharacter::Roll);
 		// TargetLock
 		EnhancedInputComponent->BindAction(TargetLockAction, ETriggerEvent::Started, this, &AMainCharacter::TargetLock);
+		EnhancedInputComponent->BindAction(ChangeTargetLockAction, ETriggerEvent::Started, this, &AMainCharacter::ChangeTargetLock);
 		// Sprint
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AMainCharacter::Sprint);
+		// Switch Mapping Context
+		EnhancedInputComponent->BindAction(SwitchMappingAction, ETriggerEvent::Started, this, &AMainCharacter::SwitchMapping);
 	}
+}
+
+void AMainCharacter::SwitchMapping(const FInputActionValue& Value)
+{
+	if (HasMappingContext(KeyboardMappingContext))
+	{
+		SwitchMappingContext(GamepadMappingContext);
+	}
+	else
+	{
+		SwitchMappingContext(KeyboardMappingContext);
+	}
+}
+
+void AMainCharacter::SwitchMappingContext(UInputMappingContext* MappingContext)
+{
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			Subsystem->ClearAllMappings();
+			Subsystem->AddMappingContext(MappingContext, 0);
+		}
+	}
+}
+
+bool AMainCharacter::HasMappingContext(const UInputMappingContext* MappingContext)
+{
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			return Subsystem->HasMappingContext(MappingContext);
+		}
+	}
+	return false;
 }
 
 void AMainCharacter::Move(const FInputActionValue& Value)
@@ -180,13 +215,24 @@ void AMainCharacter::MoveCompleted(const FInputActionValue& Value)
 }
 
 void AMainCharacter::Look(const FInputActionValue& Value)
-{
+{	
 	const FVector2D LookAxisValue = Value.Get<FVector2D>();
 
-	if (Controller != nullptr) //&& CanLook())
+	if (!bIsTargetting)
 	{
-		AddControllerYawInput(LookAxisValue.X);
-		AddControllerPitchInput(LookAxisValue.Y);
+		if (Controller != nullptr)
+		{
+			AddControllerYawInput(LookAxisValue.X);
+			AddControllerPitchInput(LookAxisValue.Y);
+		}
+	}
+}
+
+void AMainCharacter::LookStarted(const FInputActionValue& Value)
+{
+	if (HasMappingContext(GamepadMappingContext) && bIsTargetting)
+	{
+		ChangeTargetLock(Value);
 	}
 }
 
@@ -210,7 +256,6 @@ void AMainCharacter::Roll(const FInputActionValue& Value)
 
 		PlayMontageRoll(1.4f);
 		ActionState = EActionState::EAS_Rolling;
-		UpdateActionData(ActionState);
 	};
 };
 
@@ -229,7 +274,7 @@ void AMainCharacter::TargetLock(const FInputActionValue& Value)
 			ClearNet();
 			ClearTargetter();
 			SpawnTargetter();
-			AttachTargetter();
+			AttachTargetter(ClosestTarget);
 			bIsTargetting = true;
 		}
 		else
@@ -258,13 +303,36 @@ void AMainCharacter::Sprint(const FInputActionValue& Value)
 	}
 }
 
+void AMainCharacter::ChangeTargetLock(const FInputActionValue& Value)
+{
+	if (TargetsInRange.Num() == 0) return;
+
+	float ClosestDistance = 2000.f;
+	TArray<AActor*> OtherTargets;
+
+	if (bIsTargetting)
+	{
+		ClearNet();
+		SpawnTargettingNet();
+
+		for (AActor* Target : TargetsInRange)
+		{
+			if (Target != ClosestTarget)
+			{
+				OtherTargets.AddUnique(Target);
+			}
+		}
+		GetClosestTarget(OtherTargets);
+		ClearNet();
+		ClearTargetter();
+		SpawnTargetter();
+		AttachTargetter(ClosestTarget);
+	}
+}
+
 bool AMainCharacter::CanLook()
 {
-	if (bIsTargetting == false)
-	{
-		return true;
-	}
-	else return false;
+	return !bIsTargetting;
 }
 
 bool AMainCharacter::IsSprinting()
@@ -343,8 +411,8 @@ AActor* AMainCharacter::GetClosestTarget(TArray<AActor*> TargetsInRadius)
 		{
 			ClosestDistance = GetDistanceTo(Target);
 			ClosestTarget = Target;
-			//UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), ClosestDistance);
-			//UE_LOG(LogTemp, Warning, TEXT("Closest Target: %s"), *ClosestTarget->GetName());
+			UE_LOG(LogTemp, Warning, TEXT("Distance: %f"), ClosestDistance);
+			UE_LOG(LogTemp, Warning, TEXT("Closest Target: %s"), *ClosestTarget->GetName());
 		}
 	}
 	return ClosestTarget;
@@ -363,16 +431,16 @@ AActor* AMainCharacter::SpawnTargetter()
 	return Targetter;
 }
 
-void AMainCharacter::AttachTargetter()
+void AMainCharacter::AttachTargetter(AActor* Target)
 {
-	if (ClosestTarget == nullptr) return;
+	if (Target == nullptr) return;
 
 	FAttachmentTransformRules TransformRules = FAttachmentTransformRules::KeepWorldTransform;
 	TransformRules.LocationRule = EAttachmentRule::KeepWorld;
 	TransformRules.RotationRule = EAttachmentRule::KeepWorld;
 	TransformRules.ScaleRule = EAttachmentRule::KeepWorld;
 
-	Targetter->AttachToActor(ClosestTarget, TransformRules);
+	Targetter->AttachToActor(Target, TransformRules);
 }
 
 void AMainCharacter::ClearTargetter()
@@ -456,7 +524,7 @@ void AMainCharacter::OnClosestTargetIsDead()
 		ClearNet();
 		ClearTargetter();
 		SpawnTargetter();
-		AttachTargetter();
+		AttachTargetter(ClosestTarget);
 		bIsTargetting = true;
 	}
 	else
